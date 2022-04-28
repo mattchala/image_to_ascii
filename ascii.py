@@ -65,36 +65,42 @@ def add_new_lines(ascii_str, img_width):
 def set_contrast(image, value):
     return image.filter(ImageFilter.UnsharpMask(value))
 
+ascii_comms = open("ascii.txt", "w")
+ascii_comms.truncate(0)
+ascii_comms.write('Running\n')
+ascii_comms.close()
+
 
 while True:
-    time.sleep(1.0)  # maybe not needed?
-
-    # initialize user modifiable vars
+    # init modifiable vars
     path = ""
     scale_val = 10
     contrast_val = 0
     shade_val = 0
 
+    # shuts down program if condition met
+    ascii_comms = open("ascii.txt", "r")
+    ascii_lines = ascii_comms.readlines()
+    if len(ascii_lines) > 0:
+        if ascii_lines[0].strip() == "Stop":
+            ascii_comms.close()
+            break
+
     # get vars from txt
     var_txt = open("vars.txt", "r+")
     var_lines = var_txt.readlines()
-    cur = 0
-    for line in var_lines:
-        cur += 1
-        if cur == 1:
-            path = line.strip()
-        elif cur == 2:
-            scale_val = int(line.strip())
-        elif cur == 3:
-            contrast_val = int(line.strip())
-        elif cur == 4:
-            shade_val = int(line.strip())
+    if len(var_lines) > 0:
+        path = var_lines[0].strip()
+        scale_val = int(var_lines[1].strip())
+        contrast_val = int(var_lines[2].strip())
+        shade_val = int(var_lines[3].strip())
     var_txt.close()
 
     try:
         image = Image.open(path)
     except:
-        print(path, "Unable to find image ")
+        image = Image.open('no_img_loaded.png') # backup
+        # print(path, "Unable to find image ")
 
     image = resize(image, scale_val)   
     grey_image = make_gray(image)
@@ -103,6 +109,15 @@ while True:
     ascii_str = to_ascii_str(grey_image)
     ascii_image = add_new_lines(ascii_str, grey_image.width)
 
-    # open & save this file to new file with user specified name & dir path
+    # write result to file
     with open("ascii_output.txt", "w") as output:
         output.write(ascii_image)
+    output.close()
+
+# change comms file on shut down
+ascii_comms = open('ascii.txt', 'r+')
+if ascii_comms.readline().strip() == "Stop":
+    ascii_comms.seek(0)
+    ascii_comms.truncate()
+    ascii_comms.write("Not Running")
+ascii_comms.close()
